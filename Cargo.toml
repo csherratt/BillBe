@@ -1,0 +1,15 @@
+[package]
+name = "billbe"
+version = "0.1.0"
+authors = ["Talyxian <me@talyxian.space>"]
+
+[dependencies.xmas-elf]
+git="https://github.com/talyxian/xmas-elf.git"
+
+[dependencies]
+byteorder="*"
+clap="*"
+nickel="*"
+serde="*"
+serde_json="*"
+serde_derive="*"
