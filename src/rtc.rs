@@ -96,7 +96,13 @@ impl Memory for Rtc {
                 //panic!("todo address={:x}", x);
                 Ok(())
             }
-            _ => Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::BadPhysicalMemoryAddress }),
+            _ => {
+                Err(Error::BusFault {
+                        address: addr,
+                        mode: Mode::Read,
+                        description: BusDescription::BadPhysicalMemoryAddress,
+                    })
+            }
         }
     }
 
@@ -121,7 +127,13 @@ impl Memory for Rtc {
                 panic!("todo address={}  val={:x}", x, data[0]);
                 //Ok(())
             }
-            _ => Err(Error::BusFault { address: addr, mode: Mode::Write, description: BusDescription::BadPhysicalMemoryAddress }),
+            _ => {
+                Err(Error::BusFault {
+                        address: addr,
+                        mode: Mode::Write,
+                        description: BusDescription::BadPhysicalMemoryAddress,
+                    })
+            }
         }
     }
 }

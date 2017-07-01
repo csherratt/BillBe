@@ -636,6 +636,10 @@ impl Hobbit {
                          DisasmMode(mode, symbols, Some(self.instruction_pc.0)),
                          self.pc,
                          addr);
+                for i in 0..8 {
+                    let i = i * 4;
+                    println!("R{} = 0x{:08x}", i, memory.read_u32(self.sp.0 + i).unwrap());
+                }
             }
 
             Instruction::Cmp(op, src, dst) => {
@@ -705,7 +709,7 @@ impl Hobbit {
                                .unwrap());
     }
 
-    pub fn step<M: Memory>(&mut self, memory: &mut M, _symbols: Option<Symbols>) {
+    pub fn step<M: Memory>(&mut self, memory: &mut M, symbols: Option<Symbols>) {
         // step the timers
         self.step_timers();
 
@@ -715,8 +719,15 @@ impl Hobbit {
         let (instruction, next) =
             match Instruction::decode(memory, self.pc.0, self.cpu_mode_escape) {
                 Ok((i, next)) => (i, next),
-                Err(Error::BusFault { address: addr, mode: mode, description: description }) => {
-                    panic!("Bus fault from {:?} addr: 0x{:x} -- {:?}", mode, addr, description);
+                Err(Error::BusFault {
+                        address: addr,
+                        mode: mode,
+                        description: description,
+                    }) => {
+                    panic!("Bus fault from {:?} addr: 0x{:x} -- {:?}",
+                           mode,
+                           addr,
+                           description);
                 }
             };
 
@@ -726,7 +737,7 @@ impl Hobbit {
         self.cpu_mode_escape = false;
         //let next = next as usize;
 
-        /*if let Some(sym) = symbols.as_ref().and_then(|x| x.find(self.instruction_pc.0)) {
+        if let Some(sym) = symbols.as_ref().and_then(|x| x.find(self.instruction_pc.0)) {
             println!("pc: 0x{:x} <{}>", self.instruction_pc.0, sym)
         } else {
             println!("pc: 0x{:x}", self.instruction_pc.0)
@@ -736,7 +747,7 @@ impl Hobbit {
         print!("\t{}\n\t",
                Disasm(instruction, symbols, Some(self.instruction_pc.0)));
 
-        self.explain(instruction, memory, symbols);*/
+        self.explain(instruction, memory, symbols);
 
         /*for i in 0..depth {
             print!("-");
@@ -801,7 +812,11 @@ impl Hobbit {
         }*/
 
 
-        if let Err(Error::BusFault { address: addr, mode: mode, description: description }) = self.execute(instruction, memory) {
+        if let Err(Error::BusFault {
+                       address: addr,
+                       mode: mode,
+                       description: description,
+                   }) = self.execute(instruction, memory) {
             // roll back the pc
             self.pc = self.instruction_pc;
 
@@ -815,7 +830,10 @@ impl Hobbit {
                 println!("");
             }*/
 
-            panic!("Bus fault from {:?} addr: 0x{:x} -- {:?}", mode, addr, description);
+            panic!("Bus fault from {:?} addr: 0x{:x} -- {:?}",
+                   mode,
+                   addr,
+                   description);
 
         }
 
@@ -1224,7 +1242,6 @@ impl Instruction {
                    0b01_101 => Instruction::Dyandic3(Dyandic::Add, wai5(src), stk5(dst)),
                    0b01_110 => Instruction::Dyandic3(Dyandic::And, imm5(src), stk5(dst)),
                    0b01_111 => Instruction::Dyandic(Dyandic::And, stk5(src), stk5(dst)),
-
                    0b10_000 => Instruction::Cmp(CmpMode::Eq, imm5(src), stk5(dst)),
                    0b10_001 => Instruction::Cmp(CmpMode::Gt, stk5(src), stk5(dst)),
                    0b10_010 => Instruction::Cmp(CmpMode::Gt, imm5(src), stk5(dst)),

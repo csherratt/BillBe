@@ -121,7 +121,7 @@ pub enum BusDescription {
     InvalidPageEntry,
     PageTableIsNotBacked,
     WriteToReadOnlySegment,
-    WriteToReadOnlyPage
+    WriteToReadOnlyPage,
 }
 
 #[derive(Debug)]
@@ -322,7 +322,11 @@ impl Memory for Vec<u8> {
                 let from = if start >= 0x800_0000 && end < 0x880_0000 {
                     &self[start - 0x800_0000..end - 0x800_0000]
                 } else {
-                    return Result::Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::BadPhysicalMemoryAddress });
+                    return Result::Err(Error::BusFault {
+                                           address: addr,
+                                           mode: Mode::Read,
+                                           description: BusDescription::BadPhysicalMemoryAddress,
+                                       });
                 };
 
                 data.copy_from_slice(from);
@@ -341,7 +345,11 @@ impl Memory for Vec<u8> {
                 let to = if start >= 0x800_0000 && end < 0x880_0000 {
                     &mut self[start - 0x800_0000..end - 0x800_0000]
                 } else {
-                    return Result::Err(Error::BusFault { address: addr, mode: Mode::Write, description: BusDescription::BadPhysicalMemoryAddress });
+                    return Result::Err(Error::BusFault {
+                                           address: addr,
+                                           mode: Mode::Write,
+                                           description: BusDescription::BadPhysicalMemoryAddress,
+                                       });
                 };
 
                 to.copy_from_slice(data);
@@ -478,8 +486,11 @@ fn main() {
     };
     be.boot();
     //be.walk();
+    //return;
 
     //be.cpu1.walk(&mut be.memory, 0x80c0510, 0x80c0510 + 0x800, Some(Symbols::new(&be.symbols)));
+    //return;
+
     //be.memory.print_str(0x80e125c);
     for _ in 0..25_000_000 {
         be.step();

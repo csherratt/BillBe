@@ -114,12 +114,13 @@ impl MMU {
         let idx = segment_number(addr);
 
         return if let Ok(entry) = memory.read_u32(base + idx * 4) {
-                   /*println!("stb({:x})[{:x}] => {:x}",
-                     self.segment_table_base,
-                     idx,
-                     entry);*/
                    // check if the entry is invalid
                    if entry & VALID_BIT != VALID_BIT {
+                       println!("stb({:x})[{:x}] => {:x}",
+                                self.segment_table_base,
+                                idx * 4,
+                                entry);
+
                        SegmentEntry::Invalid
                        // the segment bit will determine if the this is to be
                        // treated as a single segment, or a page table
@@ -129,6 +130,8 @@ impl MMU {
                        SegmentEntry::PageTable(PageTable(entry))
                    }
                } else {
+                   println!("stb({:x})[{:x}] (not backed)", self.segment_table_base, idx);
+
                    // if the address cannot be loaded we count
                    // this as an Invalid entry for simplicity
                    SegmentEntry::Invalid
@@ -148,7 +151,11 @@ impl MMU {
                     // segment is simple so we can just do it inplace
                     // check if the segment is not accessible in user mode
                     if self.user && !segment.user() {
-                        return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::KernelSegmentFromUserMode });
+                        return Err(Error::BusFault {
+                                       address: addr,
+                                       mode: Mode::Read,
+                                       description: BusDescription::KernelSegmentFromUserMode,
+                                   });
                     }
 
                     // get the offset into the segment
@@ -156,14 +163,22 @@ impl MMU {
 
                     // check if segment does not include this address
                     if off > segment.size() {
-                        return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::AddressOutOfSegmentBound  });
+                        return Err(Error::BusFault {
+                                       address: addr,
+                                       mode: Mode::Read,
+                                       description: BusDescription::AddressOutOfSegmentBound,
+                                   });
                     }
 
                     // calculate the physical address
                     return Ok(segment.base() + off);
                 }
                 SegmentEntry::Invalid => {
-                    return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::InvalidSegmentEntry  });
+                    return Err(Error::BusFault {
+                                   address: addr,
+                                   mode: Mode::Read,
+                                   description: BusDescription::InvalidSegmentEntry,
+                               });
                 }
             };
 
@@ -175,17 +190,29 @@ impl MMU {
             let page = if let Ok(page) = memory.read_u32(page_address + idx * 4) {
                 Page(page)
             } else {
-                return return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::PageTableIsNotBacked  });
+                return return Err(Error::BusFault {
+                                      address: addr,
+                                      mode: Mode::Read,
+                                      description: BusDescription::PageTableIsNotBacked,
+                                  });
             };
 
             // check if the page is valid
             if !page.valid() {
-                return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::InvalidPageEntry  });
+                return Err(Error::BusFault {
+                               address: addr,
+                               mode: Mode::Read,
+                               description: BusDescription::InvalidPageEntry,
+                           });
             }
 
             // check if the page is accessible to the user
             if self.user && !page.user() {
-                return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::KernelPageFromUserMode });
+                return Err(Error::BusFault {
+                               address: addr,
+                               mode: Mode::Read,
+                               description: BusDescription::KernelPageFromUserMode,
+                           });
             }
 
             // set the referenced bit, write the value back
@@ -214,7 +241,11 @@ impl MMU {
                     // segment is simple so we can just do it inplace
                     // check if the segment is not accessible in user mode
                     if self.user && !segment.user() {
-                        return Err(Error::BusFault { address: addr, mode: Mode::Write, description: BusDescription::KernelSegmentFromUserMode });
+                        return Err(Error::BusFault {
+                                       address: addr,
+                                       mode: Mode::Write,
+                                       description: BusDescription::KernelSegmentFromUserMode,
+                                   });
                     }
 
                     // get the offset into the segment
@@ -222,19 +253,31 @@ impl MMU {
 
                     // check if segment does not include this address
                     if off > segment.size() {
-                        return Err(Error::BusFault { address: addr, mode: Mode::Write, description: BusDescription::AddressOutOfSegmentBound  });;
+                        return Err(Error::BusFault {
+                                       address: addr,
+                                       mode: Mode::Write,
+                                       description: BusDescription::AddressOutOfSegmentBound,
+                                   });;
                     }
 
                     // check if the segment is writable
                     if !segment.writeable() {
-                        return Err(Error::BusFault { address: addr, mode: Mode::Write, description: BusDescription::WriteToReadOnlySegment });
+                        return Err(Error::BusFault {
+                                       address: addr,
+                                       mode: Mode::Write,
+                                       description: BusDescription::WriteToReadOnlySegment,
+                                   });
                     }
 
                     // calculate the physical address
                     return Ok(segment.base() + off);
                 }
                 SegmentEntry::Invalid => {
-                    return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::InvalidSegmentEntry  });
+                    return Err(Error::BusFault {
+                                   address: addr,
+                                   mode: Mode::Write,
+                                   description: BusDescription::InvalidSegmentEntry,
+                               });
                 }
             };
 
@@ -246,22 +289,38 @@ impl MMU {
             let page = if let Ok(page) = memory.read_u32(page_address + idx * 4) {
                 Page(page)
             } else {
-                return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::PageTableIsNotBacked });
+                return Err(Error::BusFault {
+                               address: addr,
+                               mode: Mode::Write,
+                               description: BusDescription::PageTableIsNotBacked,
+                           });
             };
 
             // check if the page is valid
             if !page.valid() {
-                return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::InvalidPageEntry });
+                return Err(Error::BusFault {
+                               address: addr,
+                               mode: Mode::Write,
+                               description: BusDescription::InvalidPageEntry,
+                           });
             }
 
             // check if the page is accessible to the user
             if self.user && !page.user() {
-                return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::KernelPageFromUserMode });
+                return Err(Error::BusFault {
+                               address: addr,
+                               mode: Mode::Write,
+                               description: BusDescription::KernelPageFromUserMode,
+                           });
             }
 
             // check if the segment is writable
             if !page.writeable() {
-                return Err(Error::BusFault { address: addr, mode: Mode::Read, description: BusDescription::WriteToReadOnlyPage });
+                return Err(Error::BusFault {
+                               address: addr,
+                               mode: Mode::Write,
+                               description: BusDescription::WriteToReadOnlyPage,
+                           });
             }
 
             // set the referenced bit, write the value back
